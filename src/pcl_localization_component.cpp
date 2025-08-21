@@ -521,4 +521,12 @@ void PCLLocalization::cloudReceived(const sensor_msgs::msg::PointCloud2::ConstSh
     std::cout << "delta_angle:" << delta_angle * 180 / M_PI << "[deg]" << std::endl;
     std::cout << "-----------------------------------------------------" << std::endl;
   }
+  // Transform the point cloud from velodyne frame to base_link frame
+  sensor_msgs::msg::PointCloud2 transformed_cloud;
+  try {
+    tfbuffer_.transform(*msg, transformed_cloud, base_frame_id_, tf2::TimePointZero, msg->header.frame_id);
+  } catch (tf2::TransformException &ex) {
+    RCLCPP_ERROR(get_logger(), "Transform failed: %s", ex.what());
+    return;
+  }
 }
