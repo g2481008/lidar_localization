@@ -9,6 +9,8 @@ import launch_ros.actions
 import launch_ros.events
 
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import LifecycleNode
 from launch_ros.actions import Node
 
@@ -18,7 +20,21 @@ from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
 
+    pkg_share_dir = get_package_share_directory('pcl_localization_ros2')
+
     ld = launch.LaunchDescription()
+
+    rviz_config_arg = DeclareLaunchArgument(
+        'rviz_config',
+        default_value=os.path.join(pkg_share_dir, 'config', 'localization.rviz'),
+        description='Full path to the RViz config file to use.'
+    )
+
+    map_path_arg = DeclareLaunchArgument(
+        'map_path_arg',
+        default_value='',
+        description='Full path to the PCD map file to override the default in YAML.'
+    )
 
     lidar_tf = launch_ros.actions.Node(
         name='lidar_tf',
@@ -46,9 +62,21 @@ def generate_launch_description():
         namespace='',
         package='pcl_localization_ros2',
         executable='pcl_localization_node',
-        parameters=[localization_param_dir],
-        remappings=[('/cloud','/velodyne_points')],
+        parameters=[
+            localization_param_dir,
+            {'map_path': LaunchConfiguration('map_path_arg')}
+        ],
+        remappings=[('/cloud','/velodyne_points'),
+                    ('/pcl_pose', '/current_pose')],
         output='screen')
+
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        arguments=['-d', LaunchConfiguration('rviz_config')],
+        output='screen'
+    )
 
     to_inactive = launch.actions.EmitEvent(
         event=launch_ros.events.lifecycle.ChangeState(
@@ -86,6 +114,8 @@ def generate_launch_description():
         )
     )
 
+    ld.add_action(rviz_config_arg)
+    ld.add_action(map_path_arg)
     ld.add_action(from_unconfigured_to_inactive)
     ld.add_action(from_inactive_to_active)
 
