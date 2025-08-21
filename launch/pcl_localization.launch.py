@@ -115,6 +115,7 @@ def generate_launch_description():
     )
 
     ld.add_action(rviz_config_arg)
+    ld.add_action(rviz_node)
     ld.add_action(map_path_arg)
     ld.add_action(from_unconfigured_to_inactive)
     ld.add_action(from_inactive_to_active)
